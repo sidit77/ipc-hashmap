@@ -15,7 +15,8 @@ pub struct SharedMemory<T> {
     data: *mut T
 }
 
-///SAFETY: Must not depend on  `Drop` and all data must live inside an `UnsafeCell`
+/// # Safety
+/// Must not depend on  `Drop` and all data must live inside an `UnsafeCell`
 pub unsafe trait SharedMemorySafe: Sized {}
 
 impl<T: SharedMemorySafe> SharedMemory<T> {
@@ -30,20 +31,14 @@ impl<T: SharedMemorySafe> SharedMemory<T> {
 
     fn create_or_open<P: AsRef<Path>>(name: P, read_only: bool, data: Option<T>) -> Result<Self> {
         let open = data.is_some();
-        let o_flag = read_only
-            .then_some(OFlag::O_RDONLY)
-            .unwrap_or(OFlag::O_RDWR)
-            .union(open
-                .then_some(OFlag::O_CREAT | OFlag::O_EXCL)
-                .unwrap_or(OFlag::empty()));
+        let o_flag = if read_only { OFlag::O_RDONLY } else { OFlag::O_RDWR } |
+            if open { OFlag::O_CREAT | OFlag::O_EXCL } else { OFlag::empty() };
         let fd = shm_open(name.as_ref(), o_flag, Mode::S_IRUSR | Mode::S_IWUSR)?;
         let size = size_of::<T>();
         if open {
             ftruncate(&fd, size.try_into().unwrap())?;
         }
-        let p_flag = read_only
-            .then_some(ProtFlags::PROT_READ)
-            .unwrap_or(ProtFlags::PROT_READ | ProtFlags::PROT_WRITE);
+        let p_flag = if read_only { ProtFlags::PROT_READ } else { ProtFlags::PROT_READ | ProtFlags::PROT_WRITE };
         let data_ptr = unsafe { mmap(None, size.try_into().unwrap(), p_flag, MapFlags::MAP_SHARED, Some(&fd), 0)? as *mut T };
         if open {
             unsafe { data_ptr.write(data.unwrap()) }

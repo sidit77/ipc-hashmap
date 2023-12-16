@@ -47,10 +47,7 @@ pub struct Response(pub u64, pub Option<u64>);
 impl From<[u8; MSG_SIZE]> for Response {
     fn from(value: [u8; MSG_SIZE]) -> Self {
         let (a, b, c) = unpack(value);
-        Self {
-            0: b,
-            1: (a != 0).then_some(c),
-        }
+        Self(b, (a != 0).then_some(c))
     }
 }
 

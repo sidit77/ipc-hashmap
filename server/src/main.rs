@@ -8,7 +8,7 @@ use shared::SlotReceiver;
 fn main() {
     let buckets: usize = std::env::args()
         .nth(1)
-        .and_then(|arg| usize::from_str_radix(&arg, 10).ok())
+        .and_then(|arg| arg.parse().ok())
         .expect("Missing bucket size argument");
     println!("Using {} buckets", buckets);
     let map = Arc::new(ConcurrentMap::new(buckets));
@@ -29,11 +29,7 @@ fn main() {
                         map.remove(&k);
                     },
                     Action::Get(k) => {
-                        let resp = Response {
-                            0: k,
-                            1: map.get(&k),
-                        };
-                        connection.send(resp.into());
+                        connection.send(Response(k,map.get(&k)).into());
                     }
                 }
             }
@@ -152,7 +148,7 @@ impl<K: Ord, V> LinkedList<K, V> {
     pub fn find(&self, key: &K) -> Option<&V> {
         let mut current = &self.head;
         while let Some(node) = current {
-            match node.key.cmp(&key) {
+            match node.key.cmp(key) {
                 Ordering::Less => current = &node.next,
                 Ordering::Equal => {
                     return Some(&node.value);
@@ -162,19 +158,19 @@ impl<K: Ord, V> LinkedList<K, V> {
                 }
             }
         }
-        return None;
+        None
     }
 
     pub fn remove(&mut self, key: &K) {
         if let Some(node) = &mut self.head {
-            if node.key.eq(&key) {
+            if node.key.eq(key) {
                 self.head = node.next.take();
             }
         }
         let mut current = &mut self.head;
         while let Some(node) = current {
             if let Some(next) = &mut node.next {
-                match next.key.cmp(&key) {
+                match next.key.cmp(key) {
                     Ordering::Less => {}
                     Ordering::Equal => node.next = next.next.take(),
                     Ordering::Greater => break

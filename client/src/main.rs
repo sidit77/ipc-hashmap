@@ -7,7 +7,7 @@ const DOMAIN_SIZE: u64 = 2048;
 fn main() {
     let id: u64 = std::env::args()
         .nth(1)
-        .and_then(|arg| u64::from_str_radix(&arg, 10).ok())
+        .and_then(|arg| arg.parse().ok())
         .unwrap_or(0);
 
     let mut rng = Rng::new();

@@ -3,7 +3,7 @@ use crossbeam_utils::CachePadded;
 use nix::Result;
 use crate::shm::{SharedMemory, SharedMemorySafe};
 
-const MASTER_NAME: &'static str = "/distributed-memory-master";
+const MASTER_NAME: &str = "/distributed-memory-master";
 
 struct Counter {
     next: CachePadded<AtomicU64>,
