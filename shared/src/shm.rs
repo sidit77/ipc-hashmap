@@ -1,15 +1,17 @@
+use std::ffi::c_void;
 use std::mem::size_of;
 use std::os::fd::OwnedFd;
 use std::path::{Path, PathBuf};
+use std::ptr::null_mut;
 use nix::fcntl::OFlag;
-use nix::sys::mman::{MapFlags, mmap, ProtFlags, shm_open, shm_unlink};
+use nix::sys::mman::{MapFlags, mmap, munmap, ProtFlags, shm_open, shm_unlink};
 use nix::Result;
 use nix::sys::stat::Mode;
 use nix::unistd::ftruncate;
 
 pub struct SharedMemory<T> {
     owner: Option<PathBuf>,
-    fd: OwnedFd,
+    _fd: OwnedFd,
     data: *mut T
 }
 
@@ -49,7 +51,7 @@ impl<T: SharedMemorySafe> SharedMemory<T> {
 
         Ok(Self {
             owner: open.then(|| name.as_ref().to_path_buf()),
-            fd,
+            _fd: fd,
             data: data_ptr
         })
     }
@@ -64,6 +66,11 @@ impl<T> AsRef<T> for SharedMemory<T> {
 
 impl<T> Drop for SharedMemory<T> {
     fn drop(&mut self) {
+        unsafe {
+            munmap(self.data as *mut c_void, size_of::<T>())
+                .unwrap_or_else(|err| println!("Failed to unmap shared memory: {}", err));
+            self.data = null_mut();
+        }
         if let Some(path) = self.owner.take() {
             shm_unlink(&path)
                 .unwrap_or_else(|err| println!("Failed to unlink shared memory: {}", err));
