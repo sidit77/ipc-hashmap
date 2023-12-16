@@ -1,12 +1,17 @@
-use std::time::Duration;
+use shared::Connection;
 use shared::slot::SlotSender;
 
 fn main() {
     let counter = SlotSender::connect().unwrap();
-    for _ in 0..10 {
-        let slot = counter.reserve();
-        std::thread::yield_now();
-        slot.submit();
-        std::thread::sleep(Duration::from_millis(10));
+    let slot = counter.reserve();
+    let connection = Connection::create(slot.id()).unwrap();
+    slot.submit();
+    let mut current = 0;
+    while current < 200 {
+        connection.send([current]);
+        let [r] = connection.recv().unwrap();
+        assert_eq!(r, current + 1);
+        current = r;
     }
+    println!("Done");
 }

@@ -1,12 +1,13 @@
-use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use crossbeam_utils::CachePadded;
 use nix::Result;
 use crate::shm::{SharedMemory, SharedMemorySafe};
 
-pub const MASTER_NAME: &'static str = "/distributed-memory-master";
+const MASTER_NAME: &'static str = "/distributed-memory-master";
 
 struct Counter {
-    next: AtomicU64,
-    current: AtomicU64
+    next: CachePadded<AtomicU64>,
+    current: CachePadded<AtomicU64>
 }
 unsafe impl SharedMemorySafe for Counter {}
 
@@ -20,8 +21,8 @@ impl SlotReceiver {
     pub fn new() -> Result<Self> {
         let current = 0;
         let inner = Counter {
-            next: AtomicU64::new(current + 1),
-            current: AtomicU64::new(current),
+            next: AtomicU64::new(current + 1).into(),
+            current: AtomicU64::new(current).into(),
         };
         Ok(Self {
             inner: SharedMemory::create(MASTER_NAME, false, inner)?,
@@ -29,17 +30,20 @@ impl SlotReceiver {
         })
     }
 
-    pub fn recv(&mut self) -> u64 {
+    pub fn recv_until(&mut self, signal: &AtomicBool) -> Option<u64> {
         let mut new;
         while {
             new = self.inner.as_ref().current.load(Ordering::Relaxed);
             new == self.current
         } {
+            if signal.load(Ordering::Relaxed) {
+                return None;
+            }
             std::thread::yield_now();
         }
         debug_assert!(new > self.current);
         self.current += 1;
-        self.current
+        Some(self.current)
     }
 
 }
