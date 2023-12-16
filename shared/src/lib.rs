@@ -41,7 +41,7 @@ impl From<Action> for [u8; MSG_SIZE] {
 }
 
 #[derive(Debug, Copy, Clone, Eq, PartialEq)]
-pub struct Response(u64, Option<u64>);
+pub struct Response(pub u64, pub Option<u64>);
 
 impl From<[u8; MSG_SIZE]> for Response {
     fn from(value: [u8; MSG_SIZE]) -> Self {

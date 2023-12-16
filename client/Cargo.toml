@@ -7,3 +7,4 @@ edition = "2021"
 
 [dependencies]
 shared = { path = "../shared" }
+fastrand = "2"
