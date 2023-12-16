@@ -46,7 +46,7 @@ that is shared between both binaries and mostly contains shared memory ipc code.
 When the server is started it creates a shared memory region called `/distributed-memory-master`
 that contains a monotonic counter for clients. When a new client wants to connect to the server it 
 increments this counter and starts a new spsc connection under the name `/distributed-memory-connection-{id}` (more on that later).
-The server then detects this increment, spawn a new thread and ties to connect to this new connection.
+The server then detects this increment, spawns a new thread and tries to connect to this new connection.
 
 A connection contains two lock-free circulars buffers for bidirectional communication.
 On top of that a sits a blocking interface that uses yielding spin locks.
