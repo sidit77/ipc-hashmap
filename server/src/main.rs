@@ -26,12 +26,12 @@ fn main() {
                         map.insert(k, v);
                     },
                     Action::Delete(k) => {
-                        map.remove(k);
+                        map.remove(&k);
                     },
                     Action::Get(k) => {
                         let resp = Response {
                             0: k,
-                            1: map.get(k),
+                            1: map.get(&k),
                         };
                         connection.send(resp.into());
                     }
@@ -43,11 +43,11 @@ fn main() {
     println!("Stopping");
 }
 
-struct ConcurrentMap {
-    buckets: Box<[RwLock<LinkedList<u64, u64>>]>
+struct ConcurrentMap<K, V> {
+    buckets: Box<[RwLock<LinkedList<K, V>>]>
 }
 
-impl ConcurrentMap {
+impl<K: Ord + SimpleHash, V: Clone> ConcurrentMap<K, V> {
 
     pub fn new(buckets: usize) -> Self {
         Self {
@@ -57,36 +57,42 @@ impl ConcurrentMap {
         }
     }
 
-    fn get_bucket(&self, value: u64) -> &RwLock<LinkedList<u64, u64>> {
+    fn get_bucket(&self, key: &K) -> &RwLock<LinkedList<K, V>> {
         let len = self.buckets.len();
-        &self.buckets[Self::hash(value) % len]
+        &self.buckets[key.hash() % len]
     }
 
-    pub fn insert(&self, key: u64, value: u64) {
-        let mut bucket = self.get_bucket(key)
+    pub fn insert(&self, key: K, value: V) {
+        let mut bucket = self.get_bucket(&key)
             .write()
             .unwrap();
         bucket.insert(key, value);
     }
 
-    pub fn remove(&self, key: u64) {
+    pub fn remove(&self, key: &K) {
         let mut bucket = self.get_bucket(key)
             .write()
             .unwrap();
-        bucket.remove(&key);
+        bucket.remove(key);
     }
 
-    pub fn get(&self, key: u64) -> Option<u64> {
+    pub fn get(&self, key: &K) -> Option<V> {
         let bucket = self.get_bucket(key)
             .read()
             .unwrap();
-        bucket.find(&key).copied()
+        bucket.find(key).cloned()
     }
 
-    fn hash(value: u64) -> usize {
-        value as usize
-    }
+}
 
+pub trait SimpleHash {
+    fn hash(&self) -> usize;
+}
+
+impl SimpleHash for u64 {
+    fn hash(&self) -> usize {
+        *self as usize
+    }
 }
 
 struct Node<K, V> {

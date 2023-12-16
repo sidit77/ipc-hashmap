@@ -8,6 +8,7 @@ pub mod signal;
 pub use slot::{SlotSender, SlotReceiver,Slot};
 pub use connection::Connection;
 
+pub use nix::{Error, Result};
 pub const MSG_SIZE: usize = 17;
 pub type MsgConnection = Connection<MSG_SIZE>;
 
