@@ -1,5 +1,5 @@
 use shared::Connection;
-use shared::slot::SlotSender;
+use shared::SlotSender;
 
 fn main() {
     let counter = SlotSender::connect().unwrap();

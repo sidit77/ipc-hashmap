@@ -1,6 +1,6 @@
 use shared::Connection;
 use shared::signal::exit_requested;
-use shared::slot::SlotReceiver;
+use shared::SlotReceiver;
 
 fn main() {
     let mut counter = SlotReceiver::new().unwrap();
