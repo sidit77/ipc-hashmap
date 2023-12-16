@@ -77,8 +77,3 @@ impl<const M: usize> Drop for Connection<M> {
         self.inner.as_ref().closed.store(true, Ordering::Relaxed);
     }
 }
-
-pub trait ByteSerde<const M: usize> {
-    fn to_bytes(self) -> [u8; M];
-    fn from_bytes(bytes: [u8; M]) -> Self;
-}

@@ -109,6 +109,7 @@ impl<K, V> LinkedList<K, V> {
     }
 }
 
+//Linked lists are kinda awkward in rust :(
 impl<K: Ord, V> LinkedList<K, V> {
 
     pub fn insert(&mut self, key: K, value: V) {
